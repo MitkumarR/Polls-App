@@ -1,13 +1,16 @@
 # from lib2to3.fixes.fix_input import context
 
-from django.http import Http404
-from django.shortcuts import get_object_or_404, render
 
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+
 from django.template import loader
 from pywin.tools.browser import template
 
-from polls.models import Question
+from django.db.models import F
+
+from polls.models import Choice, Question
 
 #load template -> fill context -> return HttpResponse object
 # dex(request):
@@ -38,11 +41,30 @@ def detail(request, question_id):
     return render(request, "polls/detail.html", {"question": question} )
 
 def results(request, question_id):
-    response = "You are looking at the result of question %s."
-    return HttpResponse(response % question_id)
+    question = get_object_or_404(Question, pk=question_id)
+    return render(request, "polls/results.html", {"question": question})
 
 def vote(request, question_id):
-    return HttpResponse("You are voting on question %s." % question_id)
+    question = get_object_or_404(Question, pk=question_id)
+
+    try:
+        selected_choice = question.choice_set.get(pk=request.POST["choice"])
+    except (KeyError, Choice.DoesNotExist):
+        return render(
+            request,
+            "polls/detail.html",
+
+            {
+                "question": question,
+                "error_message": "You didn't select a choice.",
+            },
+        )
+    else:
+        selected_choice.votes = F("votes") + 1
+        selected_choice.save()
+
+        return HttpResponseRedirect(reverse("polls:results", args=(question.id,)))
+
 
 
 

@@ -9,11 +9,14 @@ from django.template import loader
 from pywin.tools.browser import template
 
 from django.db.models import F
+from django.views import generic
+from sqlalchemy.dialects.mssql.information_schema import views
 
 from polls.models import Choice, Question
 
+
 #load template -> fill context -> return HttpResponse object
-# dex(request):
+# def index(request):
 #     latest_question_list = Question.objects.order_by("-pub_date")[:5]
 #     template = loader.get_template("polls/index.html")
 #     context = {
@@ -22,27 +25,45 @@ from polls.models import Choice, Question
 #     return HttpResponse(template.render(context, request))
 
 # short cut in django
+# def index(request):
+#     latest_question_list = Question.objects.order_by("-pub_date")[:5]
+#     context = {
+#         "latest_question_list": latest_question_list,
+#     }
+#     return render(request, "polls/index.html", context)
 
-def index(request):
-    latest_question_list = Question.objects.order_by("-pub_date")[:5]
-    context = {
-        "latest_question_list": latest_question_list,
-    }
-    return render(request, "polls/index.html", context)
+# def detail(request, question_id):
+#
+#     question = get_object_or_404(Question,pk=question_id)
+#     # try:
+#     #     question = Question.objects.get(pk=question_id)
+#     # except Question.DoesNotExist:
+#     #     raise Http404("Question does not exist")
+#
+#     return render(request, "polls/detail.html", {"question": question} )
 
-def detail(request, question_id):
+# def results(request, question_id):
+#     question = get_object_or_404(Question, pk=question_id)
+#     return render(request, "polls/results.html", {"question": question})
 
-    question = get_object_or_404(Question,pk=question_id)
-    # try:
-    #     question = Question.objects.get(pk=question_id)
-    # except Question.DoesNotExist:
-    #     raise Http404("Question does not exist")
+# generic views
 
-    return render(request, "polls/detail.html", {"question": question} )
+class IndexView(generic.ListView):
 
-def results(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    return render(request, "polls/results.html", {"question": question})
+    template_name = "polls/index.html"
+    context_object_name = "latest_question_list"
+
+    def get_queryset(self):
+        """Retyrn the last five published questions."""
+        return Question.objects.order_by("-pub_date")[:5]
+
+class DetailView(generic.DetailView):
+    model = Question
+    template_name = "polls/detail.html"
+
+class ResultsView(generic.DetailView):
+    model = Question
+    template_name = "polls/results.html"
 
 def vote(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
